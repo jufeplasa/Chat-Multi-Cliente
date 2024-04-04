@@ -11,30 +11,41 @@ public class ClientHandler implements Runnable {
     private String clientName;
     Chatters clientes;
 
-    public ClientHandler(Socket clientSocket,Chatters clientes) {
+    public ClientHandler(Socket clientSocket,Chatters clientes) throws IOException {
         //asignar los objetos que llegan a su respectivo atributo en la clase
         this.clientSocket = clientSocket;
         this.clientes = clientes;
-        
+        // Establece canales de comunicación
+        out = new PrintWriter(this.clientSocket.getOutputStream(), true);
+        in= new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
     }
 
     @Override
     public void run() {
         try {
-            // Establece canales de comunicación
-            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            out = new PrintWriter(clientSocket.getOutputStream(), true);
+        	boolean isvalidName;
+        	do {
+        		//Solicitar el nombre de usuario
+                out.println("Introduce tu nombre de usuario: ");
+                clientName = in.readLine();
+                System.out.println(clientName);
+                
+                
+                //Verificar si el nombre de usuario ya está en uso
+                if(clientes.alreadyExist(clientName)){
+                    out.println("El nombre de usuario ya esta en uso");
+                    isvalidName=false;
+                }
+                else {
+                	out.println("Aceptado");
+                	isvalidName=true;
+                }
 
-            //Solicitar el nombre de usuario
-            System.out.print("Introduce tu nombre de usuario: ");
-            clientName = in.readLine();
+        	}while(!isvalidName);
+           
 
-            //Verificar si el nombre de usuario ya está en uso
-            if(clientes.alreadyExist(clientName)){
-                System.out.println("El nombre de usuario ya está en uso");
-                return;
-            }
-
+            
+        
 
             // Se notifica a los demás clientes que ha ingresado un nuevo usuario
             clientes.broadcastMessage(clientName + " se ha unido al chat!");
@@ -54,7 +65,7 @@ public class ClientHandler implements Runnable {
             clientes.removeClient(p);
             clientSocket.close();
 
-        } catch (IOException e){
+        } catch (Error | IOException e){
             e.printStackTrace();
         }
 

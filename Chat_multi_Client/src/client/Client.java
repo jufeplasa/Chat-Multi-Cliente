@@ -1,5 +1,7 @@
 package client;
 
+
+
 import java.io.*;
 import java.net.*;
 
@@ -22,12 +24,14 @@ public class Client extends Thread{
             //Escritor
             PrintWriter out= new PrintWriter(clientSocket.getOutputStream(), true);
 
-            String name=userInput.readLine();
-            String mensajeServer=in.readLine();
+            String name;
+            String mensajeServer;
             
             do{
                 //solicitar al usuario un alias, o nombre
+            	System.out.println("espero mensaje");
                 mensajeServer=in.readLine();
+                System.out.println("recibo el mensaje");
                 System.out.print(mensajeServer);
 
                 // Escribir y enviarlo al   servidor
@@ -36,11 +40,12 @@ public class Client extends Thread{
 
                 //Respuesta del cliente. 
                 mensajeServer=in.readLine();
-
+                System.out.println(mensajeServer);
                 //no debe salir de este bloque hasta que el nombre no sea aceptado
             } while(mensajeServer=="Aceptado");
-
-
+            
+            
+            
             //creamos el objeto Lector e iniciamos el hilo que nos permitira estar atentos a los mensajes
             //que llegan del servidor
             Lector lector = new Lector(in);
@@ -53,7 +58,7 @@ public class Client extends Thread{
                 //estar atento a la entrada del usuario para poner los mensajes en el canal de salida out
                 mensajeCliente=userInput.readLine();
                 out.println(mensajeCliente);
-            } while(mensajeCliente=="salir");
+            } while(mensajeCliente!="salir");
             
 
         } catch (IOException e) {

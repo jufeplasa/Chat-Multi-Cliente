@@ -1,5 +1,4 @@
 package server;
-
 import java.util.Set;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -21,8 +20,9 @@ public class Chatters{
     //metodo para verificar si un usuario existe, retorna true si existe
     public synchronized boolean alreadyExist(String userName){
     	for(Person cliente : clientes){
-    		if(cliente.getName().equals(userName));
+    		if(cliente.getName().equals(userName)) {
     			return true;
+    		}
     	}
     	return false;
     }
