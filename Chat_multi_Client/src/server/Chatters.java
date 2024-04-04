@@ -26,6 +26,18 @@ public class Chatters{
     	}
     	return false;
     }
+    
+    public synchronized void sendPrivateMessage(String receptor, String emisor, String message){
+    	for(Person cliente : clientes){
+    		if(cliente.getName().equals(receptor)) {
+    			cliente.getOut().println("("+emisor+") : "+message);
+    		}
+    	}
+    }
+    
+    
+    
+    
 
     //metodo para agregar un usuario nuevo
 

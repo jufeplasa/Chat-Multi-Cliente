@@ -60,7 +60,7 @@ public class Client extends Thread{
                 out.println(mensajeCliente);
             } while(mensajeCliente!="salir");
             
-
+            clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

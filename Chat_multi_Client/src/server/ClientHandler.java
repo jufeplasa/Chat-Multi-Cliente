@@ -24,6 +24,7 @@ public class ClientHandler implements Runnable {
     public void run() {
         try {
         	boolean isvalidName;
+        	
         	do {
         		//Solicitar el nombre de usuario
                 out.println("Introduce tu nombre de usuario: ");
@@ -44,9 +45,7 @@ public class ClientHandler implements Runnable {
         	}while(!isvalidName);
            
 
-            
-        
-
+     
             // Se notifica a los demás clientes que ha ingresado un nuevo usuario
             clientes.broadcastMessage(clientName + " se ha unido al chat!");
 
@@ -58,7 +57,15 @@ public class ClientHandler implements Runnable {
             //Mensajes del cliente
             String message;
             while ((message = in.readLine())!=null){
-                clientes.broadcastMessage(clientName+": "+message);
+            	
+            	if(message.charAt(0)=='-') {
+            		String name=extractName( message, 1);
+            		String messg=extractName( message, 2);
+            		clientes.sendPrivateMessage(name, clientName, messg);
+            	}
+            	else {
+                    clientes.broadcastMessage(clientName+": "+message);
+            	}
             }
 
             //Elimina al cliente cuando se desconecta
@@ -69,5 +76,18 @@ public class ClientHandler implements Runnable {
             e.printStackTrace();
         }
 
+    }
+    
+    public String extractName(String message, int option) {
+    	String info="";
+		if(option==1) {
+	    	String temp=message.split(" ")[0];
+	    	info = temp.split("-")[1];
+		}
+		else if (option==2) {
+			info=message.split(" ", 2)[1];
+		}
+    	
+    	return info;
     }
 }
