@@ -2,7 +2,6 @@ package client;
 
 
 import java.io.*;
-import java.net.*;
 
 public class Lector extends Thread{
     String message;

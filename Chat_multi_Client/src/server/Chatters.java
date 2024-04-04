@@ -35,12 +35,7 @@ public class Chatters{
     	}
     }
     
-    
-    
-    
-
     //metodo para agregar un usuario nuevo
-
     public synchronized void addClient(Person cliente){
     	clientes.add(cliente);
     }
@@ -52,7 +47,6 @@ public class Chatters{
     }
 
     //metodo para enviar un mensaje a todos los usuarios
-
     public synchronized void broadcastMessage(String message){
     	for(Person cliente : clientes){
     		cliente.getOut().println(message);
