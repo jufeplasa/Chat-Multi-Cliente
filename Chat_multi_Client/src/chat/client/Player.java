@@ -1,4 +1,4 @@
-package client;
+package chat.client;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -16,7 +16,8 @@ public class Player extends Thread {
     private int packes = 0;
 
     public Player(AudioFormat audioFormat, int BUFFER_SIZE) {
-        //BUFFER_SIZE es un entero que determina el tamanio del buffer, un valor normal debe ser 1028
+        // BUFFER_SIZE es un entero que determina el tamanio del buffer, un valor normal
+        // debe ser 1028
         try {
             MAX_ITEMS_IN_QUEUE = (int) audioFormat.getSampleRate() * secondsBuffer *
                     audioFormat.getFrameSize()
@@ -32,7 +33,8 @@ public class Player extends Thread {
 
         }
     }
-    //poner bytes en la cola, esta cola es la que finalmente se va a reproducir
+
+    // poner bytes en la cola, esta cola es la que finalmente se va a reproducir
     public void addBytes(byte[] bytes) {
         try {
             count++;
@@ -42,7 +44,8 @@ public class Player extends Thread {
             e.printStackTrace();
         }
     }
-    //en ejecucion
+
+    // en ejecucion
     public void run() {
         while (true) {
             try {
@@ -55,10 +58,11 @@ public class Player extends Thread {
                     Thread.yield();
                     continue;
                 }
-                //toma los bytes almacenados en la cola y elimina esa informacion de la cola. Espera si es necesario
+                // toma los bytes almacenados en la cola y elimina esa informacion de la cola.
+                // Espera si es necesario
                 byte[] bytes = buffer.take();
                 packes++;
-                //pone los bytes leidos en la tarjeta de sonido
+                // pone los bytes leidos en la tarjeta de sonido
                 sourceDataLine.write(bytes, 0, bytes.length);
                 // System.out.println("Written " + w + " bytes to sound card. " +
                 // buffer.size());
