@@ -2,6 +2,8 @@ package chat.server;
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
+import main.Server;
 
 public class ClientHandler implements Runnable {
     private Socket clientSocket;
@@ -51,18 +53,29 @@ public class ClientHandler implements Runnable {
             // Mensajes del cliente
             String message;
             while ((message = in.readLine()) != null) {
-
+                // Aquí valida si es un mensaje privado
                 String[] parts = message.split(":", 2);
                 if (parts.length == 2) {
                     String recipient = parts[0].trim();
                     String content = parts[1].trim();
                     clientes.sendPrivateMessage(recipient, clientName, content);
-                } else {
-                    clientes.broadcastMessage(clientName + ": " + message);
 
+                } else if (message.equals("REQUEST_HISTORY")) {
+                    // Aquí se envía el historial de mensajes al que lo solicitó
+                    String msj = "";
+                    for (String msg : Server.getChatHistory()) {
+                        msj += msg + " \n";
+                    }
+                    out.println(msj.toString());
+
+                } else {
+                    Server.addToChatHistory(clientName + ": " + message);
+                    clientes.broadcastMessage(clientName + ": " + message);
                 }
             }
-        } catch (IOException e) {
+        } catch (
+
+        IOException e) {
             // e.printStackTrace();
         } finally {
             try {
@@ -87,4 +100,5 @@ public class ClientHandler implements Runnable {
 
         return info;
     }
+
 }

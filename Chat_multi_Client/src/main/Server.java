@@ -2,6 +2,7 @@ package main;
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.Scanner;
 import chat.server.*;
 import chat.client.*;
@@ -9,6 +10,7 @@ import java.util.Scanner;
 
 public class Server {
     private static Chatters clientes;
+    private static ArrayList<String> chatHistory = new ArrayList<>();
 
     public static void main(String[] args) {
         clientes = new Chatters();
@@ -52,7 +54,7 @@ public class Server {
             System.out.println("Menú:");
             System.out.println("1. Agregar cliente");
             System.out.println("0. Salir");
-            System.out.print("Seleccione una opción: ");
+            System.out.print("Seleccione una opción: \n");
 
             int opcion = scanner.nextInt();
 
@@ -84,5 +86,15 @@ public class Server {
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    // Método para agregar un mensaje al historial de chat
+    public static void addToChatHistory(String message) {
+        chatHistory.add(message);
+    }
+
+    // Método para obtener el historial de chat
+    public static ArrayList<String> getChatHistory() {
+        return chatHistory;
     }
 }

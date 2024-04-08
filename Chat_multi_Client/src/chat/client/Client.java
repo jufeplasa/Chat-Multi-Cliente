@@ -2,10 +2,17 @@ package chat.client;
 
 import java.io.*;
 import java.net.*;
+import java.util.Scanner;
+
+import chat.server.Chatters;
+import chat.server.ClientHandler;
 
 public class Client extends Thread {
     private static final String SERVER_IP = "127.0.0.1";
     private static final int PORT = 6789;
+    static Scanner sc = new Scanner(System.in);
+    static ClientHandler clientHandler;
+    private static Chatters clientes;
 
     public static void main(String[] args) throws IOException, InterruptedException {
         try {
@@ -54,12 +61,57 @@ public class Client extends Thread {
                 // estar atento a la entrada del usuario para poner los mensajes en el canal de
                 // salida out
                 mensajeCliente = userInput.readLine();
+                // Aquí valida si ingresa la palabra clave menú
+                if (mensajeCliente.toUpperCase().equals("MENU") || mensajeCliente.toUpperCase().equals("MENÚ")) {
+                    System.out.println(showMenu());
+                    int option = sc.nextInt();
+
+                    switch (option) {
+                        case 1:
+                            out.println("REQUEST_HISTORY"); // Solicitud al servidor para el historial de mensajes
+                            System.out.println("Historial de mensajes:");
+                            String historyResponse = in.readLine(); // Espera la respuesta del servidor
+                            System.out.println(historyResponse); // Muestra el historial de mensajes en la consola del
+                                                                 // cliente
+                            break;
+                        case 2:
+
+                            break;
+                        case 3:
+
+                            break;
+                        case 4:
+
+                            break;
+                        case 5:
+
+                            break;
+                        case 0:
+                            System.exit(0);
+                            break;
+
+                        default:
+                            break;
+                    }
+
+                }
                 out.println(mensajeCliente);
             } while (mensajeCliente != "salir");
             clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static String showMenu() {
+        String msj = "";
+        msj = ("---------Menu desde chat------------- \n" +
+                "1. Ver historial de mensajes \n " +
+                "2. Ver historial de audios \n" +
+                "3. Reproducir un audio \n" +
+                "4. Iniciar/entrar a una llamada \n" +
+                "0. Seguir chateando");
+        return msj;
     }
 
 }
