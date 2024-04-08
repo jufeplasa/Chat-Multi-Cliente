@@ -3,16 +3,21 @@ package chat.client;
 import java.io.*;
 import java.net.*;
 import java.util.Scanner;
-
+import javax.sound.sampled.*;
 import chat.server.Chatters;
 import chat.server.ClientHandler;
+import audio.AudioPlayer;
+import audio.MusicReceiver;
+import audio.PlayerThread;
+import audio.Record;
 
 public class Client extends Thread {
     private static final String SERVER_IP = "127.0.0.1";
     private static final int PORT = 6789;
     static Scanner sc = new Scanner(System.in);
     static ClientHandler clientHandler;
-    private static Chatters clientes;
+    static Record record;
+    static AudioPlayer player;
 
     public static void main(String[] args) throws IOException, InterruptedException {
         try {
@@ -27,6 +32,26 @@ public class Client extends Thread {
 
             // Escritor
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+
+            // Recoder
+            record = new Record();
+
+            // Player
+            try {
+                player = new AudioPlayer();
+            } catch (LineUnavailableException e) {
+                e.printStackTrace();
+            }
+
+            Thread receiveThread = new Thread(() -> {
+                try {
+                    AudioPlayer player = new AudioPlayer();
+                    player.startReceiving();
+                } catch (LineUnavailableException e) {
+                    e.printStackTrace();
+                }
+            });
+            receiveThread.start();
 
             String name;
             String mensajeServer;
@@ -75,16 +100,24 @@ public class Client extends Thread {
                                                                  // cliente
                             break;
                         case 2:
+                            listAudioFiles();
 
                             break;
                         case 3:
-
+                            System.out.println("Escribe el nombre del archivo de audio:");
+                            String audioFileName = userInput.readLine();
+                            playAudioViaUDP(audioFileName);
                             break;
                         case 4:
 
                             break;
                         case 5:
 
+                            if (!record.getRecord()) {
+                                record.startRecording();
+                            } else {
+                                System.out.println("La grabación ya está en curso.");
+                            }
                             break;
                         case 0:
                             System.exit(0);
@@ -110,8 +143,55 @@ public class Client extends Thread {
                 "2. Ver historial de audios \n" +
                 "3. Reproducir un audio \n" +
                 "4. Iniciar/entrar a una llamada \n" +
+                "5. Grabar audio\n" +
                 "0. Seguir chateando");
         return msj;
+    }
+
+    public static void listAudioFiles() {
+        File folder = new File("audios");
+        File[] listOfFiles = folder.listFiles();
+
+        if (listOfFiles != null) {
+            System.out.println("Historial de audios:");
+            for (File file : listOfFiles) {
+                if (file.isFile()) {
+                    System.out.println(file.getName());
+                }
+            }
+        } else {
+            System.out.println("No se encontraron archivos de audio.");
+        }
+    }
+
+    // Método para reproducir un archivo de audio a través de UDP
+    public static void playAudioViaUDP(String audioFileName) {
+        try {
+            InetAddress IPAddress = InetAddress.getByName("127.0.0.1"); // Dirección IP del servidor
+            int PORT = 6789; // Puerto del servidor
+
+            PlayerSender sender = new PlayerSender("audios/" + audioFileName, IPAddress, PORT);
+            sender.sendAudio();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Método para iniciar la recepción y reproducción de audio
+    public static void startAudioReception() {
+        try {
+            // Configura el formato de audio (asegúrate de que coincida con el formato de
+            // grabación)
+            AudioFormat audioFormat = new AudioFormat(44000, 16, 1, true, false);
+            PlayerThread playerThread = new PlayerThread(audioFormat, 1024 + 4);
+            playerThread.start();
+
+            // Inicia la recepción de audio
+            MusicReceiver receiver = new MusicReceiver(playerThread);
+            receiver.startReceiving();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }
