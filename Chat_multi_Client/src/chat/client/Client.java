@@ -4,12 +4,12 @@ import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 import javax.sound.sampled.*;
+import audio.Record;
+import audio.AudioClient;
+import audio.AudioPlayer;
+import audio.AudioServer;
 import chat.server.Chatters;
 import chat.server.ClientHandler;
-import audio.AudioPlayer;
-import audio.MusicReceiver;
-import audio.PlayerThread;
-import audio.Record;
 
 public class Client extends Thread {
     private static final String SERVER_IP = "127.0.0.1";
@@ -18,10 +18,14 @@ public class Client extends Thread {
     static ClientHandler clientHandler;
     static Record record;
     static AudioPlayer player;
+    static AudioFormat format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
+    static final int UDP_PORT = 9876; // Puerto UDP para la recepción de audio
 
     public static void main(String[] args) throws IOException, InterruptedException {
         try {
+
             // Definicion socket del cliente
+
             Socket clientSocket = new Socket(SERVER_IP, PORT);
             System.out.println("Conectado al servidor.");
             // Lector
@@ -36,22 +40,17 @@ public class Client extends Thread {
             // Recoder
             record = new Record();
 
+            Thread receiveThread = new Thread(() -> {
+                startServer();
+            });
+            receiveThread.start();
+
             // Player
             try {
                 player = new AudioPlayer();
             } catch (LineUnavailableException e) {
                 e.printStackTrace();
             }
-
-            Thread receiveThread = new Thread(() -> {
-                try {
-                    AudioPlayer player = new AudioPlayer();
-                    player.startReceiving();
-                } catch (LineUnavailableException e) {
-                    e.printStackTrace();
-                }
-            });
-            receiveThread.start();
 
             String name;
             String mensajeServer;
@@ -97,16 +96,14 @@ public class Client extends Thread {
                             System.out.println("Historial de mensajes:");
                             String historyResponse = in.readLine(); // Espera la respuesta del servidor
                             System.out.println(historyResponse); // Muestra el historial de mensajes en la consola del
-                                                                 // cliente
+                            // cliente
                             break;
                         case 2:
                             listAudioFiles();
 
                             break;
                         case 3:
-                            System.out.println("Escribe el nombre del archivo de audio:");
-                            String audioFileName = userInput.readLine();
-                            playAudioViaUDP(audioFileName);
+                            playAudioFromServer();
                             break;
                         case 4:
 
@@ -168,30 +165,30 @@ public class Client extends Thread {
     public static void playAudioViaUDP(String audioFileName) {
         try {
             InetAddress IPAddress = InetAddress.getByName("127.0.0.1"); // Dirección IP del servidor
-            int PORT = 6789; // Puerto del servidor
 
-            PlayerSender sender = new PlayerSender("audios/" + audioFileName, IPAddress, PORT);
+            PlayerSender sender = new PlayerSender("audios/" + audioFileName, IPAddress, UDP_PORT);
             sender.sendAudio();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    // Método para iniciar la recepción y reproducción de audio
-    public static void startAudioReception() {
+    private static void startServer() {
         try {
-            // Configura el formato de audio (asegúrate de que coincida con el formato de
-            // grabación)
-            AudioFormat audioFormat = new AudioFormat(44000, 16, 1, true, false);
-            PlayerThread playerThread = new PlayerThread(audioFormat, 1024 + 4);
-            playerThread.start();
-
-            // Inicia la recepción de audio
-            MusicReceiver receiver = new MusicReceiver(playerThread);
-            receiver.startReceiving();
-        } catch (Exception e) {
+            AudioServer server = new AudioServer(9876); // Usa el puerto que prefieras
+            server.start(); // Este método bloqueará y esperará conexiones
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    public static void playAudioFromServer() {
+        try {
+            AudioClient client = new AudioClient("127.0.0.1", 9876); // Asegúrate de que la IP y el puerto sean
+                                                                     // correctos
+            client.play();
+        } catch (IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
 }

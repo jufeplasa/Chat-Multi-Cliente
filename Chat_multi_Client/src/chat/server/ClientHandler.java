@@ -68,6 +68,12 @@ public class ClientHandler implements Runnable {
                     }
                     out.println(msj.toString());
 
+                } else if (message.startsWith("PLAY_AUDIO:")) {
+                    String audioFileName = message.substring("PLAY_AUDIO:".length());
+                    // Enviar mensaje al cliente para indicar que la reproducción del audio está por
+                    // comenzar
+                    out.println("PLAY_AUDIO_STARTED:" + audioFileName);
+                    sendAudioToClient(audioFileName);
                 } else {
                     Server.addToChatHistory(clientName + ": " + message);
                     clientes.broadcastMessage(clientName + ": " + message);
@@ -99,6 +105,33 @@ public class ClientHandler implements Runnable {
         }
 
         return info;
+    }
+
+    private void sendAudioToClient(String audioFileName) {
+        try {
+            // Abrir el archivo de audio
+            File audioFile = new File("audios/" + audioFileName);
+            FileInputStream fileInputStream = new FileInputStream(audioFile);
+            BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
+
+            // Crear un socket UDP
+            DatagramSocket socket = new DatagramSocket();
+
+            // Leer el archivo de audio y enviar los datos en paquetes UDP
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = bufferedInputStream.read(buffer)) != -1) {
+                DatagramPacket packet = new DatagramPacket(buffer, bytesRead, clientSocket.getInetAddress(),
+                        clientSocket.getPort());
+                socket.send(packet);
+            }
+
+            // Cerrar recursos
+            bufferedInputStream.close();
+            socket.close();
+        } catch (IOException e) {
+            // Manejo de excepciones
+        }
     }
 
 }
