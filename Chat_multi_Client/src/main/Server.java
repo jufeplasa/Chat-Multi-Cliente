@@ -1,89 +1,92 @@
 package main;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Scanner;
-import chat.server.*;
-import chat.client.*;
+import java.util.List;
 import java.util.Scanner;
 
+import chat.server.Chatters;
+import chat.server.ClientHandler;
+
 public class Server {
-    private static Chatters clientes;
+    private static final int PORT = 6789;
+    private static Chatters clients = new Chatters();
+    private static Scanner scanner = new Scanner(System.in);
     private static ArrayList<String> chatHistory = new ArrayList<>();
 
     public static void main(String[] args) {
-        clientes = new Chatters();
-
-        // Iniciar el hilo para manejar conexiones de clientes
-        Thread serverThread = new Thread(() -> {
-            iniciarServidor();
-        });
-        serverThread.start();
-        // Mostrar el menú y manejar los comandos del usuario en el hilo principal
-        mostrarMenu();
+        startClientConnectionHandler();
+        displayMenu();
     }
 
-    public static void iniciarServidor() {
-        int PORT = 6789;
+    // Método para iniciar el manejador de conexiones de clientes
+    private static void startClientConnectionHandler() {
+        // Crear un hilo para iniciar el servidor
+        Thread serverThread = new Thread(Server::initiateServer);
+        serverThread.start();
+    }
 
-        try {
-            ServerSocket serverSocket = new ServerSocket(PORT);
+    // Método para iniciar el servidor
+    private static void initiateServer() {
+        // Crear un socket del servidor
+        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Servidor iniciado. Esperando clientes...");
-
             while (true) {
-                // Se espera a que se conecte un cliente
+                // Esperar a que un cliente se conecte
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Nuevo cliente conectado: " + clientSocket);
-
-                // crea el objeto para gestionar al cliente y le envia la informacion necesaria
-                // inicia el hilo para ese cliente}
-                ClientHandler clientHandler = new ClientHandler(clientSocket, clientes);
-                Thread t = new Thread(clientHandler);
-                t.start();
+                // Manejar la conexión del cliente
+                handleClientConnection(clientSocket);
             }
         } catch (IOException e) {
+            System.err.println("Error iniciando el servidor: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    public static void mostrarMenu() {
-        Scanner scanner = new Scanner(System.in);
+    // Método para manejar la conexión de un cliente
+    private static void handleClientConnection(Socket clientSocket) throws IOException {
+        // Crear un nuevo hilo para manejar la conexión del cliente
+        ClientHandler clientHandler = new ClientHandler(clientSocket, clients);
+        new Thread(clientHandler).start();
+    }
 
+    // Método para mostrar el menú
+    private static void displayMenu() {
         while (true) {
-            System.out.println("Menú:");
+            System.out.println("\nMenú:");
             System.out.println("1. Agregar cliente");
             System.out.println("0. Salir");
-            System.out.print("Seleccione una opción: \n");
-
-            int opcion = scanner.nextInt();
-
-            switch (opcion) {
+            System.out.print("Seleccione una opción: ");
+            int option = scanner.nextInt();
+            switch (option) {
                 case 1:
-                    abrirCMD();
+                    openCMD();
                     break;
                 case 0:
                     System.exit(0);
                     break;
                 default:
-                    System.out.println("Opción inválida");
+                    System.out.println("Opción inválida.");
             }
         }
     }
 
-    public static void abrirCMD() {
+    private static void openCMD() {
+        // Crear un proceso para ejecutar el comando para abrir CMD
+        ProcessBuilder builder = new ProcessBuilder("cmd", "/c", "start", "cmd.exe", "/k",
+                "java -cp Chat_multi_Client/bin chat.client.Client");
+        builder.redirectErrorStream(true);
+
         try {
-            // Crear un proceso para ejecutar el comando para abrir CMD
-            ProcessBuilder builder = new ProcessBuilder("cmd", "/c", "start", "cmd.exe", "/c",
-                    "java -cp Chat_multi_Client/bin chat.client.Client");
-            builder.redirectErrorStream(true);
-
-            // Ejecutar el proceso
+             // Ejecutar el proceso
             Process process = builder.start();
-
-            // Esperar a que el proceso termine
+             // Esperar a que el proceso termine
             process.waitFor();
         } catch (IOException | InterruptedException e) {
+            System.err.println("Error ejecutando comando CMD: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -94,7 +97,7 @@ public class Server {
     }
 
     // Método para obtener el historial de chat
-    public static ArrayList<String> getChatHistory() {
-        return chatHistory;
+    public static List<String> getChatHistory() {
+        return new ArrayList<>(chatHistory);
     }
 }
