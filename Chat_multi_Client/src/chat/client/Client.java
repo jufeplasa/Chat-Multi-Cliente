@@ -27,6 +27,8 @@ public class Client extends Thread {
             // Definicion socket del cliente
 
             Socket clientSocket = new Socket(SERVER_IP, PORT);
+            clientSocket.setSoTimeout(5000);// Espera de 5 segundos para respuesta del
+            // server
             System.out.println("Conectado al servidor.");
             // Lector
             BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
@@ -75,58 +77,92 @@ public class Client extends Thread {
             // creamos el objeto Lector e iniciamos el hilo que nos permitira estar atentos
             // a los mensajes
             // que llegan del servidor
-            Lector lector = new Lector(in);
-
-            // inicar el hilo
-            lector.start();
-            String mensajeCliente;
+            Thread readerThread = new Thread(() -> {
+                Lector lector = new Lector(in);
+                lector.start(); // Iniciar el hilo de lectura
+            });
+            readerThread.start();
+            boolean isOn = true;
 
             do {
                 // estar atento a la entrada del usuario para poner los mensajes en el canal de
                 // salida out
-                mensajeCliente = userInput.readLine();
-                // Aquí valida si ingresa la palabra clave menú
-                if (mensajeCliente.toUpperCase().equals("MENU") || mensajeCliente.toUpperCase().equals("MENÚ")) {
-                    System.out.println(showMenu());
-                    int option = sc.nextInt();
+                System.out.println(showMenu());// Mostramos el menu
+                int option = sc.nextInt();
+                sc.nextLine();
+                String msj = "";
+                String nameGroup = "";
+                switch (option) {
+                    case 1:
+                        System.out.print("Ingrese el nombre del grupo: ");
+                        nameGroup = userInput.readLine();
+                        // Enviar solicitud al servidor
+                        out.println("REQUEST_CREATEGROUP " + nameGroup);
+                        Thread.sleep(500);
+                        // Recibir respuesta del servidor
+                        msj = in.readLine();
+                        // Mostrar la respuesta del servidor
+                        System.out.println("Mensaje del servidor: " + msj);
+                        break;
+                    case 2:
+                        System.out.println("Ingrese el nombre del grupo al que desea unirse: ");
+                        nameGroup = userInput.readLine();
+                        out.println("REQUEST_JOINGROUP " + nameGroup);// Request para entrar a grupo
+                        msj = in.readLine(); // Respuesta del server
+                        System.out.println("Mensaje del servidor: " + msj);
+                        break;
+                    case 3:
+                        System.out.println("Ingrese el nombre del grupo al que desea enviar un mensaje: ");
+                        nameGroup = userInput.readLine();
+                        System.out.println("Ingrese el mensaje que quiere mandar: ");
+                        String msjToSend = userInput.readLine();
+                        out.println("REQUEST_SENDGROUPMSG " + nameGroup + " " + msjToSend);
+                        msj = in.readLine(); // Respuesta del server
+                        System.out.println("Mensaje del servidor: " + msj);
+                        break;
+                    case 4:
+                        System.out.println("Escriba el nombre de la persona: ");
+                        String namePerson = userInput.readLine();
+                        System.out.println("Message: ");
+                        String privateMsj = userInput.readLine();
+                        out.println("REQUEST_SENDPRIVATEMSG " + namePerson + " " + privateMsj);// Request para
+                                                                                               // enviar msj privado
+                        break;
+                    case 5:
+                        System.out.println("Escriba el nombre del grupo: ");
+                        String groupName = userInput.readLine();
+                        out.println("REQUEST_HISTORY " + groupName);
+                        msj = in.readLine(); // Respuesta del servidor
+                        System.out.println(msj);
+                        break;
+                    case 6:
+                        break;
+                    case 7:
+                        break;
+                    case 8:
+                        break;
+                    case 9:
 
-                    switch (option) {
-                        case 1:
-                            out.println("REQUEST_HISTORY"); // Solicitud al servidor para el historial de mensajes
-                            System.out.println("Historial de mensajes:");
-                            String historyResponse = in.readLine(); // Espera la respuesta del servidor
-                            System.out.println(historyResponse); // Muestra el historial de mensajes en la consola del
-                            // cliente
-                            break;
-                        case 2:
-                            listAudioFiles();
+                        break;
+                    case 10:
+                        if (!record.getRecord()) {
+                            record.startRecording();
+                        } else {
+                            System.out.println("La grabación ya está en curso."); // Esto debería ir en los grupos
+                                                                                  // en un menu de grupo
+                        }
+                        break;
 
-                            break;
-                        case 3:
-                            playAudioFromServer();
-                            break;
-                        case 4:
+                    case 0:
+                        System.exit(0);
+                        isOn = false;
+                        break;
 
-                            break;
-                        case 5:
-
-                            if (!record.getRecord()) {
-                                record.startRecording();
-                            } else {
-                                System.out.println("La grabación ya está en curso.");
-                            }
-                            break;
-                        case 0:
-                            System.exit(0);
-                            break;
-
-                        default:
-                            break;
-                    }
-
+                    default:
+                        break;
                 }
-                out.println(mensajeCliente);
-            } while (mensajeCliente != "salir");
+
+            } while (isOn);
             clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -135,13 +171,13 @@ public class Client extends Thread {
 
     public static String showMenu() {
         String msj = "";
-        msj = ("---------Menu desde chat------------- \n" +
-                "1. Ver historial de mensajes \n " +
-                "2. Ver historial de audios \n" +
-                "3. Reproducir un audio \n" +
-                "4. Iniciar/entrar a una llamada \n" +
-                "5. Grabar audio\n" +
-                "0. Seguir chateando");
+        msj = ("------------Menu desde chat------------- \n" +
+                "1. Crear grupo \n" +
+                "2. Ingresar a un grupo \n" +
+                "3. Mandar un mensaje a un grupo \n" +
+                "4. Mandar mensaje privado \n" +
+                "5. Obtener historial de un chat\n" +
+                "0. Salir");
         return msj;
     }
 
@@ -184,8 +220,7 @@ public class Client extends Thread {
 
     public static void playAudioFromServer() {
         try {
-            AudioClient client = new AudioClient("127.0.0.1", 9876); // Asegúrate de que la IP y el puerto sean
-                                                                     // correctos
+            AudioClient client = new AudioClient("127.0.0.1", 9876);
             client.play();
         } catch (IOException | LineUnavailableException e) {
             e.printStackTrace();

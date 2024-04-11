@@ -49,22 +49,46 @@ public class ClientHandler implements Runnable {
 
     private void announceNewUser() {
         // Se notifica a los demás clientes que ha ingresado un nuevo usuario
-        clients.broadcastMessage(clientName + " se ha unido al chat!");
+        clients.broadcastMessage(clientName + " se ha unido al server!");
         // Se agrega el nuevo usuario a la lista de clientes
         clients.addClient(new Person(clientName, out));
     }
 
-    private void handleClientMessages() throws IOException {
+    private void handleClientMessages() throws IOException, Exception { ///////////////////////////////
         String message;
+
         while ((message = in.readLine()) != null) {
-            if (message.startsWith("REQUEST_HISTORY")) {
-                sendChatHistory();
-            } else if (message.startsWith("PLAY_AUDIO:")) {
+            if (message.startsWith("REQUEST_CREATEGROUP")) {
+                createGroup(message);
+                out.println("Grupo creado con éxito");// Respuesta del server para el client
+            } else if (message.startsWith("REQUEST_JOINGROUP")) {
+                // out.println();
+                int response = joinGroup(message);
+                if (response == 0) {
+                    out.println("Has ingresa a un grupo!"); // Respuesta del servidor para el cliente
+                } else {
+                    out.println("Grupo no encontrado!"); // Respuesta del servidor para el cliente
+                }
+
+            } else if (message.startsWith("REQUEST_SENDGROUPMSG")) {
+                String msj = sendGroupMessage(message);
+                if (msj == null) {
+                    out.println("Grupo NO encontrado");
+                } else {
+                    out.println(msj);
+                }
+
+            } else if (message.startsWith("REQUEST_SENDPRIVATEMSG")) {
+                // out.println();
+                processPrivateMessage(message);
+            } else if (message.startsWith("REQUEST_HISTORY")) {
+                // out.println();// Limpiamos el buffer
+                String msj = getHistoryGroup(message);
+                out.println(msj);
+            } else {
                 String audioFileName = message.substring("PLAY_AUDIO:".length());
                 out.println("PLAY_AUDIO_STARTED:" + audioFileName);
                 sendAudioToClient(audioFileName);
-            } else {
-                processMessage(message);
             }
         }
     }
@@ -104,7 +128,8 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    private void processMessage(String message) {
+    @Deprecated
+    private void processMessage(String message) throws Exception {
         if (message.startsWith("/msg")) {
             processPrivateMessage(message);
         } else if (message.startsWith("/creategroup")) {
@@ -133,18 +158,26 @@ public class ClientHandler implements Runnable {
         clients.joinGroup(groupName, clientName);
     }
 
-    private void joinGroup(String message) {
+    private int joinGroup(String message) {
         String[] parts = message.split(" ", 2);
         String groupName = parts[1];
-        clients.joinGroup(groupName, clientName);
+        int response = clients.joinGroup(groupName, clientName);
+        return response;
     }
 
-    private void sendGroupMessage(String message) {
+    private String sendGroupMessage(String message) throws Exception {
+        String[] parts = message.split(" ", 3);
+        String groupName = parts[1];
+        String groupMessage = parts[2];
+        String msj = clients.sendGroupMessage(groupName, clientName, groupMessage);
+        return msj;
+    }
+
+    private String getHistoryGroup(String message) throws Exception {
         String[] parts = message.split(" ", 2);
-        String[] groupAndMessage = parts[1].split(" ", 2);
-        String groupName = groupAndMessage[0];
-        String groupMessage = groupAndMessage[1];
-        clients.sendGroupMessage(groupName, clientName, groupMessage);
+        String groupName = parts[1];
+        String msj = clients.getHistory(groupName, clientName);
+        return msj;
     }
 
     @Override
@@ -155,6 +188,8 @@ public class ClientHandler implements Runnable {
             handleClientMessages();
         } catch (IOException e) {
             System.err.println("Error handling client messages: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
         } finally {
             cleanUp();
         }

@@ -1,6 +1,7 @@
 package chat.server;
 
 import java.util.Set;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 
@@ -58,36 +59,69 @@ public class Chatters {
     }
 
     // metodo para unirse a un grupo
-    public synchronized void joinGroup(String groupName, String clientName) {
+    public synchronized int joinGroup(String groupName, String clientName) {
+        int response = -1;
         for (Group group : groups) {
             if (group.getName().equals(groupName)) {
                 group.addMember(clientName);
-                break;
+                response = 0;
             }
         }
+        return response;
     }
 
     // metodo para mandar un mensaje a un grupo
-    public synchronized void sendGroupMessage(String groupName, String clientName, String message) {
+    public synchronized String sendGroupMessage(String groupName, String clientName, String message) throws Exception {
+        String msj = "";
+        boolean isFound = false;
         for (Group group : groups) {
             if (group.getName().equals(groupName)) {
+                isFound = true;
                 for (String member : group.getMembers()) {
                     for (Person client : clients) {
                         if (client.getName().equals(member)) {
-                            client.getOut().println("(" + groupName + ") (" + clientName + ") : " + message);
-                            break;
+                            msj = "(" + groupName + ") (" + clientName + ") : " + message;
+                            group.addHistory("(" + groupName + ") (" + clientName + ") : " + message);
+
                         }
                     }
                 }
-                break;
             }
         }
+        if (!isFound) {
+            throw new Exception("Groupo '" + groupName + "' no fue encontrado.");
+        }
+        return msj;
     }
 
     // metodo para enviar un mensaje a todos los usuarios
     public synchronized void broadcastMessage(String message) {
         for (Person client : clients) {
             client.getOut().println(message);
+            client.getOut().println();// kimpiamos
         }
+    }
+
+    // Método para obtener el historial de un chat particular
+    public synchronized String getHistory(String groupName, String clientName) throws Exception {
+        String msj = "";
+        boolean isFound = false;
+        for (Group group : groups) {
+            if (group.getName().equals(groupName)) { // Encontramos el grupo
+                isFound = true;
+                for (String member : group.getMembers()) { // Buscamos el mienbro
+                    for (Person client : clients) { // Seguimos buscando en los clientes
+                        if (client.getName().equals(member)) { // Lo encontramos
+                            // Entonces podemos extraer el historial
+                            msj += "- " + group.getName() + " " + group.getHistory();
+                        }
+                    }
+                }
+            }
+            if (!isFound) {
+                throw new Exception("Groupo '" + groupName + "' no fue encontrado.");
+            }
+        }
+        return msj;
     }
 }

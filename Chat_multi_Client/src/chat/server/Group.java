@@ -6,10 +6,12 @@ import java.util.List;
 public class Group {
     private String name;
     private List<String> members;
+    private ArrayList<String> history;
 
     public Group(String name) {
         this.name = name;
         this.members = new ArrayList<>();
+        this.history = new ArrayList<>();
     }
 
     // Añadir un miembro al grupo
@@ -37,5 +39,15 @@ public class Group {
     // Getter para la lista de miembros
     public List<String> getMembers() {
         return new ArrayList<>(members); // Devuelve una copia para evitar la modificación externa
+    }
+
+    // Métod para añadir mensajes al historial
+    public void addHistory(String msj) {
+        history.add(msj);
+    }
+
+    // Método para obtener el historial del grupo
+    public ArrayList<String> getHistory() {
+        return this.history;
     }
 }
